@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Task Manager</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      touch-action: manipulation;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      height: 100%;
+      overscroll-behavior-y: contain;
+    }
+    #auth-page {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f0f2f5;
+      touch-action: pan-y;
+    }
+    .auth-container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+      margin: 20px;
+    }
+    input, button {
+      -webkit-tap-highlight-color: transparent;
+      tap-highlight-color: transparent;
+    }
+    #main-app {
+      display: none;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #4CAF50;
+      color: white;
+      padding: 15px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    #time-counter {
+      background-color: white;
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 5px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .task-list {
+      padding: 10px;
+    }
+    .task-item {
+      background: white;
+      border: 1px solid #ddd;
+      margin-bottom: 10px;
+      padding: 15px;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .task-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      padding: 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    @media (max-width: 480px) {
+      .auth-container {
+        margin: 10px;
+        width: calc(100% - 20px);
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="auth-page">
+  <div id="login-form" class="auth-container">
+    <h2>Login</h2>
+    <input type="email" id="login-email" placeholder="Email" required>
+    <input type="password" id="login-password" placeholder="Senha" required>
+    <button class="btn" onclick="handleLogin()">Entrar</button>
+    <button class="btn" onclick="toggleForms()">Criar nova conta</button>
+  </div>
+
+  <div id="register-form" class="auth-container" style="display:none;">
+    <h2>Cadastro</h2>
+    <input type="text" id="reg-name" placeholder="Nome" required>
+    <input type="email" id="reg-email" placeholder="Email" required>
+    <input type="password" id="reg-password" placeholder="Senha" required>
+    <input type="number" id="reg-age" placeholder="Idade" required>
+    <input type="file" id="reg-photo" accept="image/*" required>
+    <button class="btn" onclick="handleRegister()">Cadastrar</button>
+    <button class="btn" onclick="toggleForms()">Já tenho conta</button>
+  </div>
+</div>
+
+<div id="main-app">
+  <div class="header">
+    <span id="user-name"></span>
+    <button class="btn" onclick="logout()">Sair</button>
+  </div>
+
+  <div id="time-counter" onclick="removeMinutes()">
+    Tempo total: <span id="total-minutes">0</span> minutos
+  </div>
+
+  <div class="task-list">
+    <h2>Minhas Tarefas</h2>
+    <button class="btn" onclick="showAddTaskModal()">+ Nova Tarefa</button>
+    <div id="tasks-container"></div>
+  </div>
+</div>
+
+<script>
+let currentUser = null;
+
+function toggleForms() {
+  const loginForm = document.getElementById('login-form');
+  const registerForm = document.getElementById('register-form');
+  loginForm.style.display = loginForm.style.display === 'none' ? 'block' : 'none';
+  registerForm.style.display = registerForm.style.display === 'none' ? 'block' : 'none';
+}
+
+async function handleRegister() {
+  const name = document.getElementById('reg-name').value;
+  const email = document.getElementById('reg-email').value;
+  const password = document.getElementById('reg-password').value;
+  const age = document.getElementById('reg-age').value;
+  const photoFile = document.getElementById('reg-photo').files[0];
+
+  if (!name || !email || !password || !age || !photoFile) {
+    alert('Preencha todos os campos');
+    return;
+  }
+
+  try {
+    const photoBase64 = await convertToBase64(photoFile);
+    const user = {
+      name,
+      email,
+      password,
+      age,
+      photo: photoBase64,
+      tasks: [],
+      totalMinutes: 0
+    };
+
+    let users = JSON.parse(localStorage.getItem('users') || '{}');
+    if (users[email]) {
+      alert('Email já cadastrado');
+      return;
+    }
+
+    users[email] = user;
+    localStorage.setItem('users', JSON.stringify(users));
+    alert('Cadastro realizado com sucesso!');
+    toggleForms();
+  } catch (error) {
+    alert('Erro ao processar imagem');
+  }
+}
+
+function handleLogin() {
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+
+  const users = JSON.parse(localStorage.getItem('users') || '{}');
+  const user = users[email];
+
+  if (!user) {
+    alert('Usuário não encontrado');
+    return;
+  }
+
+  if (user.password !== password) {
+    alert('Senha incorreta');
+    return;
+  }
+
+  currentUser = user;
+  localStorage.setItem('currentUser', email);
+  loadMainApp();
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem('currentUser');
+  document.getElementById('auth-page').style.display = 'flex';
+  document.getElementById('main-app').style.display = 'none';
+}
+
+function convertToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+}
+
+function loadMainApp() {
+  document.getElementById('auth-page').style.display = 'none';
+  document.getElementById('main-app').style.display = 'block';
+  
+  document.getElementById('user-name').textContent = currentUser.name;
+  document.getElementById('total-minutes').textContent = currentUser.totalMinutes || 0;
+  
+  loadTasks();
+}
+
+function loadTasks() {
+  const container = document.getElementById('tasks-container');
+  container.innerHTML = '';
+  
+  currentUser.tasks.forEach((task, index) => {
+    const taskElement = document.createElement('div');
+    taskElement.className = 'task-item';
+    taskElement.innerHTML = `
+      <div>
+        <strong>${task.name}</strong> (${task.difficulty}⭐)
+        <p>${task.desc}</p>
+      </div>
+      <div class="task-buttons">
+        <button onclick="completeTask(${index})">✔️</button>
+        <button onclick="removeTask(${index})">🗑️</button>
+      </div>
+    `;
+    container.appendChild(taskElement);
+  });
+}
+
+function showAddTaskModal() {
+  const name = prompt('Nome da tarefa:');
+  const desc = prompt('Descrição da tarefa:');
+  const difficulty = prompt('Dificuldade (0-6 estrelas):');
+  
+  if (name && desc && difficulty) {
+    const task = {
+      name, 
+      desc, 
+      difficulty: parseInt(difficulty)
+    };
+
+    currentUser.tasks.push(task);
+    saveUserData();
+    loadTasks();
+  }
+}
+
+function completeTask(index) {
+  const task = currentUser.tasks[index];
+  const rewardMap = [2, 10, 15, 20, 30, 45, 65];
+  const reward = rewardMap[task.difficulty];
+  
+  currentUser.totalMinutes = (currentUser.totalMinutes || 0) + reward;
+  currentUser.tasks.splice(index, 1);
+  
+  saveUserData();
+  loadTasks();
+  updateMinutesDisplay();
+  
+  alert(`Parabéns! Você ganhou ${reward} minutos.`);
+}
+
+function removeTask(index) {
+  if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
+    currentUser.tasks.splice(index, 1);
+    saveUserData();
+    loadTasks();
+  }
+}
+
+function removeMinutes() {
+  const minutesToRemove = parseInt(prompt('Quantos minutos deseja remover?', '0'));
+  
+  if (!isNaN(minutesToRemove)) {
+    currentUser.totalMinutes = Math.max(0, (currentUser.totalMinutes || 0) - minutesToRemove);
+    saveUserData();
+    updateMinutesDisplay();
+  }
+}
+
+function updateMinutesDisplay() {
+  document.getElementById('total-minutes').textContent = currentUser.totalMinutes || 0;
+}
+
+function saveUserData() {
+  let users = JSON.parse(localStorage.getItem('users') || '{}');
+  users[currentUser.email] = currentUser;
+  localStorage.setItem('users', JSON.stringify(users));
+}
+
+window.onload = function() {
+  const savedUserEmail = localStorage.getItem('currentUser');
+  if (savedUserEmail) {
+    const users = JSON.parse(localStorage.getItem('users') || '{}');
+    currentUser = users[savedUserEmail];
+    if (currentUser) {
+      loadMainApp();
+    }
+  }
+};
+</script>
+</body>
+</html>
