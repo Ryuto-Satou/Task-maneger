@@ -3,8 +3,8 @@
 Um sistema simples de gerenciamento de tarefas que oferece recompensas por produtividade, desenvolvido para fins de aprendizado.
 
 ![Task Manager](https://img.shields.io/badge/Status-Experimental-yellow)
-![GitHub last commit](https://img.shields.io/github/last-commit/ryuto-satou/Task-maneger)
-![GitHub](https://img.shields.io/github/license/ryuto-satou/Task-maneger)
+![GitHub last commit](https://img.shields.io/github/last-commit/calebe-rocha/Task-maneger)
+![GitHub](https://img.shields.io/github/license/calebe-rocha/Task-maneger)
 
 ## ✨ Funcionalidades
 
@@ -24,7 +24,7 @@ Um sistema simples de gerenciamento de tarefas que oferece recompensas por produ
 
 Clique no link abaixo para acessar a aplicação:
 
-[👉 https://ryuto-satou.github.io/Task-maneger/](https://ryuto-satou.github.io/Task-maneger/)
+[👉 https://calebe-rocha.github.io/Task-maneger/](https://calebe-rocha.github.io/Task-maneger/)
 
 ## ⚠️ Aviso Importante
 
@@ -45,7 +45,7 @@ Este projeto foi desenvolvido **apenas para fins educacionais** há aproximadame
 - Git/GitHub Pages para hospedagem
 
 ## 🫂 Creditos para:
-**Ryuto**
+**Calebe**
 
 ---
 
